@@ -153,11 +153,11 @@ func TestPushCommand(t *testing.T) {
 				testutil.AssertEqual(t, "path", cwd, dir)
 				return nil
 			},
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("some-namespace"),
-				kf.WithPushContainerRegistry("some-reg.io"),
-				kf.WithPushMinScale(1),
-				kf.WithPushMaxScale(1),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("some-namespace"),
+				apps.WithPushContainerRegistry("some-reg.io"),
+				apps.WithPushMinScale(1),
+				apps.WithPushMaxScale(1),
 			},
 			serviceBindingClientFunc: func(t *testing.T, f *svbFake.FakeClientInterface) {
 				f.EXPECT().Create("SERVICE_INSTANCE", "APP_NAME", gomock.Any()).Do(func(instance, app string, opts ...servicebindings.CreateOption) {
