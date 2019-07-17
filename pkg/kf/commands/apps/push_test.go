@@ -25,10 +25,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/kf/pkg/apis/kf/v1alpha1"
-	"github.com/google/kf/pkg/kf"
+	"github.com/google/kf/pkg/kf/apps"
+	appsfake "github.com/google/kf/pkg/kf/apps/fake"
 	"github.com/google/kf/pkg/kf/commands/config"
 	"github.com/google/kf/pkg/kf/commands/utils"
-	kfFake "github.com/google/kf/pkg/kf/fake"
 	servicebindings "github.com/google/kf/pkg/kf/service-bindings"
 	svbFake "github.com/google/kf/pkg/kf/service-bindings/fake"
 	"github.com/google/kf/pkg/kf/testutil"
@@ -57,7 +57,7 @@ func TestPushCommand(t *testing.T) {
 		wantImagePrefix          string
 		targetSpace              *v1alpha1.Space
 
-		wantOpts []kf.PushOption
+		wantOpts []apps.PushOption
 	}{
 		"uses configured properties": {
 			namespace: "some-namespace",
@@ -78,15 +78,15 @@ func TestPushCommand(t *testing.T) {
 				testutil.AssertEqual(t, "path is abs", true, filepath.IsAbs(dir))
 				return nil
 			},
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("some-namespace"),
-				kf.WithPushContainerRegistry("some-reg.io"),
-				kf.WithPushServiceAccount("some-service-account"),
-				kf.WithPushGrpc(true),
-				kf.WithPushBuildpack("some-buildpack"),
-				kf.WithPushEnvironmentVariables(map[string]string{"env1": "val1", "env2": "val2"}),
-				kf.WithPushMinScale(1),
-				kf.WithPushMaxScale(1),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("some-namespace"),
+				apps.WithPushContainerRegistry("some-reg.io"),
+				apps.WithPushServiceAccount("some-service-account"),
+				apps.WithPushGrpc(true),
+				apps.WithPushBuildpack("some-buildpack"),
+				apps.WithPushEnvironmentVariables(map[string]string{"env1": "val1", "env2": "val2"}),
+				apps.WithPushMinScale(1),
+				apps.WithPushMaxScale(1),
 			},
 		},
 		"uses current working directory for empty path": {
@@ -101,11 +101,11 @@ func TestPushCommand(t *testing.T) {
 				testutil.AssertEqual(t, "path", cwd, dir)
 				return nil
 			},
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("some-namespace"),
-				kf.WithPushContainerRegistry("some-reg.io"),
-				kf.WithPushMinScale(1),
-				kf.WithPushMaxScale(1),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("some-namespace"),
+				apps.WithPushContainerRegistry("some-reg.io"),
+				apps.WithPushMinScale(1),
+				apps.WithPushMaxScale(1),
 			},
 		},
 		"custom-source": {
@@ -116,11 +116,11 @@ func TestPushCommand(t *testing.T) {
 				"--source-image", "custom-reg.io/source-image:latest",
 			},
 			wantImagePrefix: "custom-reg.io/source-image:latest",
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("some-namespace"),
-				kf.WithPushContainerRegistry("some-reg.io"),
-				kf.WithPushMinScale(1),
-				kf.WithPushMaxScale(1),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("some-namespace"),
+				apps.WithPushContainerRegistry("some-reg.io"),
+				apps.WithPushMinScale(1),
+				apps.WithPushMaxScale(1),
 			},
 		},
 		"specify-instances": {
@@ -132,11 +132,11 @@ func TestPushCommand(t *testing.T) {
 				"--source-image", "custom-reg.io/source-image:latest",
 			},
 			wantImagePrefix: "custom-reg.io/source-image:latest",
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("some-namespace"),
-				kf.WithPushMinScale(2),
-				kf.WithPushMaxScale(2),
-				kf.WithPushContainerRegistry("some-reg.io"),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("some-namespace"),
+				apps.WithPushMinScale(2),
+				apps.WithPushMaxScale(2),
+				apps.WithPushContainerRegistry("some-reg.io"),
 			},
 		},
 		"bind-service-instance": {
@@ -173,11 +173,11 @@ func TestPushCommand(t *testing.T) {
 			wantErr:         errors.New("some error"),
 			pusherErr:       errors.New("some error"),
 			wantImagePrefix: "some-reg.io/src-default-app-name",
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("default"),
-				kf.WithPushContainerRegistry("some-reg.io"),
-				kf.WithPushMinScale(1),
-				kf.WithPushMaxScale(1),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("default"),
+				apps.WithPushContainerRegistry("some-reg.io"),
+				apps.WithPushMinScale(1),
+				apps.WithPushMaxScale(1),
 			},
 		},
 		"namespace is not provided": {
@@ -199,11 +199,11 @@ func TestPushCommand(t *testing.T) {
 					},
 				},
 			},
-			wantOpts: []kf.PushOption{
-				kf.WithPushNamespace("some-namespace"),
-				kf.WithPushContainerRegistry("space-reg.io"),
-				kf.WithPushMinScale(1),
-				kf.WithPushMaxScale(1),
+			wantOpts: []apps.PushOption{
+				apps.WithPushNamespace("some-namespace"),
+				apps.WithPushContainerRegistry("space-reg.io"),
+				apps.WithPushMinScale(1),
+				apps.WithPushMaxScale(1),
 			},
 		},
 		"SrcImageBuilder returns an error": {
@@ -244,16 +244,17 @@ applications:
 			}
 
 			ctrl := gomock.NewController(t)
-			fakePusher := kfFake.NewFakePusher(ctrl)
+			fakeApps := appsfake.NewFakeClient(ctrl)
+			fakePusher := appsfake.NewFakePusher(ctrl)
 
 			fakePusher.
 				EXPECT().
 				Push(gomock.Any(), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(appName, srcImage string, opts ...kf.PushOption) error {
+				DoAndReturn(func(appName, srcImage string, opts ...apps.PushOption) error {
 					testutil.AssertEqual(t, "app name", tc.args[0], appName)
 
-					expectOpts := kf.PushOptions(tc.wantOpts)
-					actualOpts := kf.PushOptions(opts)
+					expectOpts := apps.PushOptions(tc.wantOpts)
+					actualOpts := apps.PushOptions(opts)
 					testutil.AssertEqual(t, "namespace", expectOpts.Namespace(), actualOpts.Namespace())
 					testutil.AssertEqual(t, "container registry", expectOpts.ContainerRegistry(), actualOpts.ContainerRegistry())
 					testutil.AssertEqual(t, "buildpack", expectOpts.Buildpack(), actualOpts.Buildpack())
@@ -281,7 +282,7 @@ applications:
 
 			svbClient := svbFake.NewFakeClientInterface(ctrl)
 
-			c := NewPushCommand(params, fakePusher, tc.srcImageBuilder, svbClient)
+			c := NewPushCommand(params, fakeApps, fakePusher, tc.srcImageBuilder, svbClient)
 			buffer := &bytes.Buffer{}
 			c.SetOutput(buffer)
 			c.SetArgs(tc.args)
