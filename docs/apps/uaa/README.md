@@ -50,10 +50,29 @@ These instructions will walk you through deploying [Cloud Foundry UAA][uaa] as a
     - name: uaa
       env:
         BP_JAVA_VERSION: 8.*
-        BP_BUILT_ARTIFACT: uaa/build/libs/cloudfoundry-identity-uaa-*.war
         UAA_URL: http://localhost:8080
         LOGIN_URL: http://localhost:8080
         UAA_CONFIG_YAML: |
+          scim:
+            users:
+              - sre@vmware.com|apassword|scim.write,scim.read,openid
+          uaa:
+            admin:
+              client_secret: oranges
+          spring_profiles: hsqldb
+          oauth:
+            # Always override clients on startup
+            client:
+              override: true
+
+            # List of OAuth clients
+            clients:
+              admin:
+                id: admin
+                secret: bananas
+                authorized-grant-types: client_credentials
+                scope: none
+                authorities: uaa.admin,clients.admin,clients.read,clients.write,clients.secret
           issuer:
             uri: http://localhost:8080
           encryption:
@@ -102,6 +121,45 @@ These instructions will walk you through deploying [Cloud Foundry UAA][uaa] as a
               -----END CERTIFICATE-----
           LOGIN_SECRET: loginsecret
           jwt:
+            token:
+              signing-key: |
+                -----BEGIN RSA PRIVATE KEY-----
+                MIIEpAIBAAKCAQEA2IFFRXyOV/yWeG+73XGSl5Td/qtrmdGdUXuwMWBmP77fScDH
+                xZIbNpKHu3EHDvC3J5xc3U5VnC0bQWMD5uqjItfMfgE/VKeBIbl8l63r1n/MPZyG
+                4h18JL2JKyOFE+zlN0nhcGGZJY2no1h1z6TnsGSc/Zyfk+KKuPM2CodzAChaauJz
+                wXd0n0ZNvi7feZd3Ue9xO+TbWwS46G0c4hreiEePznCVfB5tIAVKxNQe6nYT8OPR
+                C8zQGfruHFen8o0wScDiKJhmQn9n2Wl/R20+gmyz2uC1tbA6szDhBnmHO4xkSiw5
+                +XJOKxtwhRpMjHASeymW7hrPbKOSI5QGmyC+/wIDAQABAoIBAQCXaWiRnPdLj2mI
+                FtQynP/hJIpQVX/t1guIddEV5w37HLi5sqnDgVeoxbdJHlXKXAwrFo5XczYp/92k
+                z+NltcibUIJByQuKX47OkBMTXN2naD7lA7fNIMO2ShtI4RFriuwOy4tu9cKN4dBQ
+                S0gxDGnAEc09DDEJ0pAjomuz12BUxZp4KTdGDdh6r+FmmVcochSLXFOvgBmKysOT
+                uixngts/wx2X/CnrjyCdrhd8b6FROG4UeCXGLl8/pAJFBAzvYT/RmqiGluDB8wbT
+                CuKKR/kuj6ROSHhcEvWf/hMDYzuL34/BqN95Y5dXCiQlesxPQinyaFHpkI8ncioY
+                97yMgD/5AoGBAPF7PRZBY43eX7ElymErb7If10/zi9bhrdG/vmJm0jzQDhXbRMGf
+                v64zZcEH1WQMrtsTPFD/DmuhZt/pIDuMF9RpMycjiJYWi+O3RPn2ss7sllmMYqw4
+                kxEKJeZxnYzMvqVrqA+8K9mrNrcnmTSspFKiame40yaxaZi0roSeWVdNAoGBAOWF
+                m2pAH4cD4UylvNzkKeX/MFN8arqVhayAvT//v3QLJ+nghzZfreK9VRrUaKYpZtIF
+                SxTLlo3ndcyhvZChhLfIHrlDuSKxWGFaI40cnNusPeFytb5Cnu6mW6IjXy//RC63
+                rrE0rzIfpag/cYWmtaEzkjEDTFurEklPhKQnDoF7AoGBAJTg6x+OfudXg12/M8/G
+                rN1/3gpP2BZKGxUnByS5ycJub1CwV+qcJ9wpmgFxZ/GAFEnCyTwSk/xtjPRdUV8F
+                FygBF+V4ddw62FIzipYlr8X9fRCGicsuMhWeURGLWJwXGy73ea0B0XMoqNow0rbz
+                /Xdo5Ps/qwa++KCKPNJMoj49AoGAdix/Y4pWcT63Lq6a+iRjyi7E5AdIMH8xzyqN
+                xjjYi1f/GfTnyUAkGH0hJ2o742mnrfTZvoBAKRoGVfDk2GXBHprj7sGGve0Pszgk
+                28/il1wslDpqhuZoTDnNLkMGDIFiyqb6Q/T7S1RuB516xrSaCcCywZeQJhaDmMlf
+                YuFVH6cCgYBoVhfmNzquVAH83EqaDvzHtiTZudvDXwKv9LXNJHQj0EuQpGhUi4fJ
+                s0fD3Nc23ek+e1UXLlAax+jaQ0+4aXu/2NkfoBLvp+kz35fokA8sm2jzHj3+daef
+                sIE8+X32dyQFkxM0KqialS70uRPxEFAKp7+Zxfvw6e+utgNI1dHFDQ==
+                -----END RSA PRIVATE KEY-----
+              verification-key: |
+                -----BEGIN PUBLIC KEY-----
+                MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2IFFRXyOV/yWeG+73XGS
+                l5Td/qtrmdGdUXuwMWBmP77fScDHxZIbNpKHu3EHDvC3J5xc3U5VnC0bQWMD5uqj
+                ItfMfgE/VKeBIbl8l63r1n/MPZyG4h18JL2JKyOFE+zlN0nhcGGZJY2no1h1z6Tn
+                sGSc/Zyfk+KKuPM2CodzAChaauJzwXd0n0ZNvi7feZd3Ue9xO+TbWwS46G0c4hre
+                iEePznCVfB5tIAVKxNQe6nYT8OPRC8zQGfruHFen8o0wScDiKJhmQn9n2Wl/R20+
+                gmyz2uC1tbA6szDhBnmHO4xkSiw5+XJOKxtwhRpMjHASeymW7hrPbKOSI5QGmyC+
+                /wIDAQAB
+                -----END PUBLIC KEY-----
             policy:
               activeKeyId: key-id-1
               keys:
