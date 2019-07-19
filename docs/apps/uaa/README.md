@@ -56,9 +56,6 @@ These instructions will walk you through deploying [Cloud Foundry UAA][uaa] as a
           scim:
             users:
               - sre@vmware.com|apassword|scim.write,scim.read,openid
-          uaa:
-            admin:
-              client_secret: oranges
           spring_profiles: hsqldb
           oauth:
             # Always override clients on startup
